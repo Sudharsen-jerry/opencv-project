@@ -1,0 +1,55 @@
+import cv2
+import numpy as np
+import datetime
+
+def read_file(file_path):
+    return cv2.VideoCapture(file_path)
+
+def detect_vehicles(video_path):
+    cap = read_file(video_path)
+    hog = cv2.HOGDescriptor()
+    hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
+    
+    frame_count = 0
+    detected_vehicle_count = 0
+    detected_object_count = 0
+
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
+        
+        frame = cv2.resize(frame, (800, 600))
+        boxes, weights = hog.detectMultiScale(frame, winStride=(8, 8), padding=(8, 8), scale=1.05)
+        
+        for (x, y, w, h) in boxes:
+            if h / w > 1.2 and h > 100 and w > 60:
+                label = "Vehicle"
+                color = (255, 0, 0)
+                detected_vehicle_count += 1
+            else:
+                label = "Object"
+                color = (0, 255, 0)
+                detected_object_count += 1
+            
+            cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
+            cv2.putText(frame, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+        
+        frame_count += 1
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        cv2.putText(frame, f'Frame: {frame_count}', (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
+        cv2.putText(frame, f'Detected Vehicles: {detected_vehicle_count}', (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
+        cv2.putText(frame, f'Detected Objects: {detected_object_count}', (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
+        cv2.putText(frame, f'Time: {timestamp}', (10, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
+        
+        cv2.imshow('Vehicle Detection System', frame)
+        
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+    
+    cap.release()
+    cv2.destroyAllWindows()
+
+video_path = "path/to/your/video/file.mp4"
+detect_vehicles(video_path)
